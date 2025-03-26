@@ -2,7 +2,8 @@ const pool = require("../db");
 
 const likePost = async (req, res) => {
     try {
-        const { user_id, post_id } = req.params;
+        const { user_id, } = req.params;
+        const { post_id } = req.body;
 
         const post = await pool.query("SELECT * FROM posts WHERE id = $1", [post_id]);
 

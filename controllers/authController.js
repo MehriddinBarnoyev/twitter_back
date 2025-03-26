@@ -9,7 +9,7 @@ require("dotenv").config();
 const register = async (req, res) => {
     const { name, username, password } = req.body;
 
-    
+
     try {
         const userExists = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
         if (userExists.rows.length > 0) {
@@ -23,7 +23,11 @@ const register = async (req, res) => {
             [name, username, hashedPassword]
         );
 
-        const token = jwt.sign({ id: user.rows[0].id, username: user.rows[0].username }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign(
+            { id: newUser.rows[0].id, username: newUser.rows[0].username },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
 
         res.status(201).json({ message: "User registered", user: newUser.rows[0], token });
     } catch (err) {
@@ -48,7 +52,11 @@ const login = (async (req, res) => {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
-        const token = jwt.sign({ id: user.rows[0].id, username: user.rows[0].username }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign(
+            { id: newUser.rows[0].id, username: newUser.rows[0].username },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
 
         res.json({ message: "Login successful", token });
     } catch (err) {
@@ -68,4 +76,4 @@ const getAllUser = async (req, res) => {
     }
 }
 
-module.exports = { register, login , getAllUser};
+module.exports = { register, login, getAllUser };

@@ -47,7 +47,8 @@ const getAllPosts = async (req, res) => {
 // Postni o'chirish (user_id va post_id req.params orqali olinadi)
 const deletePost = async (req, res) => {
     try {
-        const { user_id, post_id } = req.params;
+        const { user_id } = req.params;
+        const { post_id } = req.body;
 
         const post = await pool.query("SELECT * FROM posts WHERE id = $1 AND user_id = $2", [post_id, user_id]);
 
