@@ -14,6 +14,25 @@ const getMyPosts = async (req, res) => {
     }
 };
 
+const getPostById = async (req, res) => {
+    try {
+        const { post_id } = req.params;
+        const post = await pool.query(`SELECT 
+                posts.text AS post_text,
+                users.username AS author,
+                COUNT(likes.id) AS like_count
+                FROM posts
+                JOIN users ON posts.user_id = users.id
+                LEFT JOIN likes ON posts.id = likes.post_id
+                WHERE posts.id = $1 -- Bu yerda kerakli post ID-ni kiriting
+                GROUP BY posts.id, users.username;`, [post_id]);
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({ message: "Server error" });
+
+    }
+}
+
 // Yangi post yaratish (user_id req.params orqali olinadi)
 const createPost = async (req, res) => {
     try {
@@ -35,7 +54,16 @@ const createPost = async (req, res) => {
 // Barcha postlarni olish
 const getAllPosts = async (req, res) => {
     try {
-        const posts = await pool.query("SELECT * FROM posts ORDER BY created_at DESC");
+        const posts = await pool.query(`SELECT 
+            posts.id AS post_id,
+            posts.text AS post_text,
+            users.username AS author,
+            COUNT(likes.id) AS like_count
+            FROM posts
+            JOIN users ON posts.user_id = users.id
+            LEFT JOIN likes ON posts.id = likes.post_id
+            GROUP BY posts.id, users.username
+            ORDER BY posts.created_at DESC;`);
 
         res.json(posts.rows);
     } catch (err) {
@@ -65,4 +93,4 @@ const deletePost = async (req, res) => {
     }
 };
 
-module.exports = { getMyPosts, createPost, getAllPosts, deletePost };
+module.exports = { getMyPosts, createPost, getAllPosts, deletePost , getPostById};
