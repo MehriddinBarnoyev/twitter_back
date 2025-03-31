@@ -4,11 +4,9 @@ const jwt = require("jsonwebtoken");
 const pool = require("../db");
 require("dotenv").config();
 
-
 // Register
 const register = async (req, res) => {
     const { name, username, password } = req.body;
-
 
     try {
         const userExists = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
@@ -23,9 +21,10 @@ const register = async (req, res) => {
             [name, username, hashedPassword]
         );
 
+        // JWT token yaratish
         const token = jwt.sign(
             { id: newUser.rows[0].id, username: newUser.rows[0].username },
-            process.env.JWT_SECRET,
+            process.env.JWT_SECRET || "default_secret",
             { expiresIn: "1h" }
         );
 
@@ -37,7 +36,7 @@ const register = async (req, res) => {
 };
 
 // Login
-const login = (async (req, res) => {
+const login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
@@ -52,28 +51,18 @@ const login = (async (req, res) => {
             return res.status(400).json({ message: "Invalid username or password" });
         }
 
+        // `user.rows[0]` dan foydalanish kerak
         const token = jwt.sign(
-            { id: newUser.rows[0].id, username: newUser.rows[0].username },
-            process.env.JWT_SECRET,
+            { id: user.rows[0].id, username: user.rows[0].username },
+            process.env.JWT_SECRET || "default_secret",
             { expiresIn: "1h" }
         );
 
-        res.json({ message: "Login successful", token });
+        res.json({ message: "Login successful", token, user: user.rows[0] });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });
     }
-});
+};
 
-const getAllUser = async (req, res) => {
-    try {
-        const users = await pool.query("SELECT * FROM users");
-
-        res.json(users.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
-}
-
-module.exports = { register, login, getAllUser };
+module.exports = { register, login };

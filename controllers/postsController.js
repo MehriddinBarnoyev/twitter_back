@@ -48,22 +48,42 @@ const createPost = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });
-    }
+    }   
 };
 
 // Barcha postlarni olish
 const getAllPosts = async (req, res) => {
     try {
         const posts = await pool.query(`SELECT 
-            posts.id AS post_id,
-            posts.text AS post_text,
-            users.username AS author,
-            COUNT(likes.id) AS like_count
-            FROM posts
-            JOIN users ON posts.user_id = users.id
-            LEFT JOIN likes ON posts.id = likes.post_id
-            GROUP BY posts.id, users.username
-            ORDER BY posts.created_at DESC;`);
+    p.id,
+    u.username,
+    '1h' AS time,
+    u.profile_image AS "profileImg",
+    p.image AS "postImg",
+    COUNT(DISTINCT l.id) AS "likeCount",
+    p.text AS "caption",
+    COUNT(DISTINCT c.id) AS "commentCount",
+    -- Har bir user uchun, ushbu postga like bosganmi yoki yo'qmi?
+    json_agg(
+        DISTINCT jsonb_build_object(
+            'user_id', lu.id, 
+            'username', lu.username,
+            'isLiked', CASE 
+                WHEN l.id IS NOT NULL THEN true 
+                ELSE false 
+            END
+        )
+    ) AS "usersWhoLiked"
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    LEFT JOIN likes l ON p.id = l.post_id
+    LEFT JOIN users lu ON l.user_id = lu.id -- Like bosgan userlarni olish uchun
+    LEFT JOIN comments c ON p.id = c.post_id
+    GROUP BY p.id, u.username, u.profile_image, p.image, p.text;
+
+
+
+`);
 
         res.json(posts.rows);
     } catch (err) {
@@ -93,4 +113,4 @@ const deletePost = async (req, res) => {
     }
 };
 
-module.exports = { getMyPosts, createPost, getAllPosts, deletePost , getPostById};
+module.exports = { getMyPosts, createPost, getAllPosts, deletePost, getPostById };
