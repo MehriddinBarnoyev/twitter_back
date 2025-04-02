@@ -36,8 +36,7 @@ const getPostById = async (req, res) => {
 // Yangi post yaratish (user_id req.params orqali olinadi)
 const createPost = async (req, res) => {
     try {
-        const { user_id } = req.params;
-        const { text, image } = req.body;
+        const { text, image, user_id  } = req.body;
 
         const newPost = await pool.query(
             "INSERT INTO posts (user_id, text, image) VALUES ($1, $2, $3) RETURNING *",
