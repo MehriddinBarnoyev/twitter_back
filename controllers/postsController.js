@@ -14,13 +14,14 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB cheklov
     fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png/;
+        // Barcha rasm turlarini qabul qilish uchun MIME tiplarini kengaytiramiz
+        const filetypes = /jpeg|jpg|png|gif|bmp|webp|tiff/;
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = filetypes.test(file.mimetype);
         if (extname && mimetype) {
             return cb(null, true);
         } else {
-            cb(new Error("Faqat JPEG, JPG yoki PNG rasmlar qo‘llab-quvvatlanadi"));
+            cb(new Error("Faqat rasm fayllari qo‘llab-quvvatlanadi (JPEG, PNG, GIF, BMP, WEBP, TIFF va boshqalar)"));
         }
     }
 }).single("image");
@@ -29,9 +30,7 @@ const upload = multer({
 const getMyPosts = async (req, res) => {
     try {
         const { user_id } = req.params;
-
         const posts = await pool.query("SELECT * FROM posts WHERE user_id = $1", [user_id]);
-
         res.json(posts.rows);
     } catch (err) {
         console.error(err);
@@ -55,11 +54,9 @@ const getPostById = async (req, res) => {
             GROUP BY posts.id, users.username`,
             [post_id]
         );
-
         if (post.rows.length === 0) {
             return res.status(404).json({ message: "Post topilmadi" });
         }
-
         res.json(post.rows[0]);
     } catch (err) {
         console.error(err.message);
@@ -73,16 +70,13 @@ const createPost = async (req, res) => {
         if (err) {
             return res.status(400).json({ message: err.message });
         }
-
         try {
             const { text, user_id } = req.body;
             const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
-
             const newPost = await pool.query(
                 "INSERT INTO posts (user_id, text, image) VALUES ($1, $2, $3) RETURNING *",
                 [user_id, text, imagePath]
             );
-
             res.status(201).json(newPost.rows[0]);
         } catch (err) {
             console.error(err);
@@ -121,7 +115,6 @@ const getAllPosts = async (req, res) => {
             LEFT JOIN comments c ON p.id = c.post_id
             GROUP BY p.id, u.username, u.profile_image, p.image, p.text
         `);
-
         res.json(posts.rows);
     } catch (err) {
         console.error(err);
@@ -134,18 +127,14 @@ const deletePost = async (req, res) => {
     try {
         const { user_id } = req.params;
         const { post_id } = req.body;
-
         const post = await pool.query(
             "SELECT * FROM posts WHERE id = $1 AND user_id = $2",
             [post_id, user_id]
         );
-
         if (post.rows.length === 0) {
             return res.status(404).json({ message: "Post topilmadi yoki ruxsat yo‘q" });
         }
-
         await pool.query("DELETE FROM posts WHERE id = $1", [post_id]);
-
         res.json({ message: "Post o‘chirildi" });
     } catch (err) {
         console.error(err);
